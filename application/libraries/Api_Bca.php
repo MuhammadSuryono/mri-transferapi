@@ -449,6 +449,8 @@ class Api_Bca
             CURLOPT_CONNECTTIMEOUT => 60,    // time-out on connect
             CURLOPT_TIMEOUT        => 60,    // time-out on response
             CURLOPT_URL => $url,
+			CURLOPT_SSL_VERIFYHOST => 0,
+			CURLOPT_SSL_VERIFYPEER => 0,
             CURLOPT_POSTFIELDS => json_encode($body),
             CURLOPT_HTTPHEADER => $headr,
         ));
@@ -492,6 +494,8 @@ class Api_Bca
             CURLOPT_TIMEOUT        => 60,    // time-out on response
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_URL => $url,
+			CURLOPT_SSL_VERIFYHOST => 0,
+			CURLOPT_SSL_VERIFYPEER => 0,
             CURLOPT_POSTFIELDS => json_encode($body),
             CURLOPT_HTTPHEADER => $headr,
         ));
