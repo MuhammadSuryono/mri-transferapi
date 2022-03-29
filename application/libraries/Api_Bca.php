@@ -138,6 +138,56 @@ class Api_Bca
 			$this->CI->db->insert('saldo', $data);
 		}
 	}
+
+	public function getMutasi($decode, $apikey, $api_secret, $corporate_id, $account_number)
+	{
+		// $apikey = $this->settings['api_key'];
+		// $secretkey = $this->settings['api_secret'];
+		$main_url = $this->settings['main_url'];
+		// $corporate_id = $this->settings['corporate_id'];
+		// $account_number = $this->settings['account_number'];
+		$token = $decode;
+
+		date_default_timezone_set("Asia/Jakarta");
+		$waktu = date('Y-m-d\TH:i:s.000P');
+		// ?StartDate=2022-01-01&EndDate=2022-03-29
+		$pathUrl = sprintf("/banking/v3/corporates/%s/accounts/%s/statements", $corporate_id, $account_number);
+		$signature = 'GET:' . $pathUrl . ":" . $token . ":" . hash('sha256', '') . ":" . $waktu;
+		$signfinal = hash_hmac('sha256', $signature, $api_secret);
+		$curl = curl_init();
+		curl_setopt_array($curl, array(
+			CURLOPT_URL => $main_url . $pathUrl . "?StartDate=2022-01-01&EndDate=2022-03-29",
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_ENCODING => "",
+			CURLOPT_MAXREDIRS => 10,
+			CURLOPT_TIMEOUT => 30,
+			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+			CURLOPT_CUSTOMREQUEST => "GET",
+			CURLOPT_HTTPHEADER => array(
+				"Authorization: Bearer " . $token,
+				"Content-Type: application/json",
+				//"Origin: mri.com", //example.com
+				"X-BCA-Key:" . $apikey,
+				"X-BCA-Timestamp:" . $waktu,
+				"X-BCA-Signature:" . $signfinal,
+				"ChannelID:" . "95051",
+				"CredentialID:" . $corporate_id
+			),
+		));
+		curl_setopt($curl, CURLINFO_HEADER_OUT, true); //info header
+		$response = curl_exec($curl);
+		$info = curl_getinfo($curl);
+		$err = curl_error($curl);
+		curl_close($curl);
+//		print_r($info['request_header']);
+		// print_r($data);
+//		print_r($response);
+
+		// var_dump('here');
+		// die;
+
+		return json_decode($response, TRUE);
+	}
 	//funtion fund transfer (sesama bca)
 	public function getTransfer($decode, $norek, $jumlah, $transfer_req_id, $berita_transfer, $apikey, $saldo_awal, $api_secret, $corporate_id, $account_number, $urlCallback)
 	{
@@ -515,5 +565,10 @@ class Api_Bca
 			"transfer_req_id" => $transfer_req_id,
 			"response" => $response
 		];
+	}
+
+	public function bca_request()
+	{
+
 	}
 }
