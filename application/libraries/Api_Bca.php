@@ -147,6 +147,7 @@ class Api_Bca
 		date_default_timezone_set("Asia/Jakarta");
 		$waktu = date('Y-m-d\TH:i:s.000P');
 
+
 		$var = array(
 			'transactionId' => $transactionId,
 			'transactionDate' => $transactionDate,
