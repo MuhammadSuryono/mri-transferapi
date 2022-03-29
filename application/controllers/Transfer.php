@@ -784,4 +784,47 @@ class Transfer extends CI_Controller
 			echo "<script>window.close();</script>";
 		}
 	}
+
+	public function status($transferRequestId = null)
+	{
+		$data = array(
+			"statusCheck" => false,
+			"dataExists" => false,
+			"dataTransfer" => null
+		);
+		if ($transferRequestId != null) {
+			$dataTransfer = $this->db->get_where("log_transfer", array("transfer_req_id" => $transferRequestId))->row();
+			$data["statusCheck"] = true;
+			$data["dataExists"] = $dataTransfer != null;
+			$data["dataTransfer"] = $dataTransfer;
+
+			$dataTransferBody = json_decode($dataTransfer->data);
+			$resultCheckToBCA = $this->checkStatusTransaction($dataTransferBody->TransactionID, $dataTransferBody->TransactionDate, $dataTransferBody->TransferType);
+			$data["resultBca"] = $resultCheckToBCA;
+		}
+		$this->load->view('template/header');
+		$this->load->view('template/sidebar');
+		$this->load->view('transfer/status', $data);
+		$this->load->view('template/footer');
+	}
+
+	private function checkStatusTransaction($transferRequestId, $transactionDate, $transactionType)
+	{
+		$this->load->library('Api_Bca');
+		$apikey = $this->session->userdata('token');
+		$api_secret = $this->session->userdata('api_secret');
+		$client_id = $this->session->userdata('client_id');
+		$client_secret = $this->session->userdata('client_secret');
+		$token = $this->api_bca->getToken($client_id, $client_secret);
+		$channel_id = "";
+		$corporate_id = "";
+		$d = $this->Token_model->gettoken();
+		foreach ($d->result() as $d) {
+			$corporate_id = $d->corporate_id;
+			$channel_id = $d->channel_id;
+		}
+
+		$resultCheck = $this->api_bca->getStatusTransaction($token, $apikey, $api_secret, $corporate_id, $channel_id, $transferRequestId, $transactionDate, $transactionType);
+		return $resultCheck;
+	}
 }

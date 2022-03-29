@@ -77,7 +77,7 @@ class Api_Bca
 			//print_r($decode);
 		}
 	}
-	//function infomation balance account
+
 	public function getInfobal($decode, $apikey, $api_secret, $corporate_id, $account_number)
 	{
 		//$apikey = $this->settings['api_key'];
@@ -139,6 +139,51 @@ class Api_Bca
 		}
 	}
 
+	public function getStatusTransaction($decode, $apikey, $api_secret, $corporate_id, $channelId, $transactionId, $transactionDate, $transactionType)
+	{
+		$main_url = $this->settings['main_url'];
+		$token = $decode;
+
+		date_default_timezone_set("Asia/Jakarta");
+		$waktu = date('Y-m-d\TH:i:s.000P');
+
+		$var = array(
+			'transactionId' => $transactionId,
+			'transactionDate' => $transactionDate,
+			'transferType' => strtolower($transactionType),
+		);
+		$data = json_encode($var, JSON_UNESCAPED_SLASHES);
+		$pathUrl = sprintf("/banking/corporates/transfers/v2/status");
+		$signature = 'POST:' . $pathUrl . ":" . $token . ":" . hash('sha256', $data) . ":" . $waktu;
+		$signfinal = hash_hmac('sha256', $signature, $api_secret);
+
+		$curl = curl_init();
+		curl_setopt_array($curl, array(
+			CURLOPT_URL => $main_url . $pathUrl,
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_ENCODING => "",
+			CURLOPT_MAXREDIRS => 10,
+			CURLOPT_TIMEOUT => 30,
+			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+			CURLOPT_CUSTOMREQUEST => "POST",
+			CURLOPT_POSTFIELDS => $data,
+			CURLOPT_HTTPHEADER => array(
+				"Authorization: Bearer " . $token,
+				"Content-Type: application/json",
+				"X-BCA-Key:" . $apikey,
+				"X-BCA-Timestamp:" . $waktu,
+				"X-BCA-Signature:" . $signfinal,
+				"CHANNEL-ID:" . $channelId,
+				"X-PARTNER-ID:" . $corporate_id
+			),
+		));
+		curl_setopt($curl, CURLINFO_HEADER_OUT, true); //info header
+		$response = curl_exec($curl);
+		curl_close($curl);
+
+		return json_decode($response, TRUE);
+	}
+
 	public function getMutasi($decode, $apikey, $api_secret, $corporate_id, $account_number)
 	{
 		// $apikey = $this->settings['api_key'];
@@ -150,19 +195,29 @@ class Api_Bca
 
 		date_default_timezone_set("Asia/Jakarta");
 		$waktu = date('Y-m-d\TH:i:s.000P');
+
+		$var = array(
+			'transactionId' => '02220034',
+			'transactionDate' => '2022-03-29',
+			'transferType' => 'llg',
+		);
+		$data = json_encode($var, JSON_UNESCAPED_SLASHES);
 		// ?StartDate=2022-01-01&EndDate=2022-03-29
-		$pathUrl = sprintf("/banking/v3/corporates/%s/accounts/%s/statements", $corporate_id, $account_number);
-		$signature = 'GET:' . $pathUrl . ":" . $token . ":" . hash('sha256', '') . ":" . $waktu;
+		$pathUrl = sprintf("/banking/corporates/transfers/v2/status");
+		$signature = 'POST:' . $pathUrl . ":" . $token . ":" . hash('sha256', $data) . ":" . $waktu;
+//		var_dump($signature, $api_secret);
 		$signfinal = hash_hmac('sha256', $signature, $api_secret);
+
 		$curl = curl_init();
 		curl_setopt_array($curl, array(
-			CURLOPT_URL => $main_url . $pathUrl . "?StartDate=2022-01-01&EndDate=2022-03-29",
+			CURLOPT_URL => $main_url . $pathUrl,
 			CURLOPT_RETURNTRANSFER => true,
 			CURLOPT_ENCODING => "",
 			CURLOPT_MAXREDIRS => 10,
 			CURLOPT_TIMEOUT => 30,
 			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-			CURLOPT_CUSTOMREQUEST => "GET",
+			CURLOPT_CUSTOMREQUEST => "POST",
+			CURLOPT_POSTFIELDS => $data,
 			CURLOPT_HTTPHEADER => array(
 				"Authorization: Bearer " . $token,
 				"Content-Type: application/json",
@@ -170,8 +225,8 @@ class Api_Bca
 				"X-BCA-Key:" . $apikey,
 				"X-BCA-Timestamp:" . $waktu,
 				"X-BCA-Signature:" . $signfinal,
-				"ChannelID:" . "95051",
-				"CredentialID:" . $corporate_id
+				"CHANNEL-ID:" . "95051",
+				"X-PARTNER-ID:" . $corporate_id
 			),
 		));
 		curl_setopt($curl, CURLINFO_HEADER_OUT, true); //info header
